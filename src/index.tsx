@@ -1,13 +1,18 @@
+import { Main } from "@1hive/1hive-ui"
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import App from './App';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
+ReactDOM.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>
+     <Main
+        assetsUrl="/aragon-ui/"
+        layout={false}
+        scrollView={true}
+        theme="dark"
+      >
+        <App />
+      </Main>
+  </React.StrictMode>,
+  document.getElementById("root")
 );
