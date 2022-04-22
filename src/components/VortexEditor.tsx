@@ -1,19 +1,12 @@
-import { LoadingRing, GU } from "@1hive/1hive-ui";
 import { useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import theme from "../editor/theme.json";
 import { conf, contribution, language } from "../editor/vortex";
+import { Loading } from "../components/Loading";
 
 type VortexEditorProps = {
   onEditorMounting(mounting: boolean): void;
 };
-
-const Loading = () => (
-  <div style={{ display: "flex", gap: 1 * GU }}>
-    <LoadingRing />
-    Loading vortex...
-  </div>
-);
 
 export const VortexEditor = ({ onEditorMounting }: VortexEditorProps) => {
   const [code, setCode] = useState("");
