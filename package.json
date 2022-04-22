@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@1hive/1hive-ui": "^1.1.0",
+    "@monaco-editor/react": "^4.4.2",
     "@react-spring/web": "^9.4.4",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.1.1",

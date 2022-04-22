@@ -8,7 +8,7 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="App">
+      <div style={{ height: "100vh", border: "1px solid black" }}>
         <TopBar />
         <Routes />
       </div>
