@@ -1,11 +1,13 @@
-import { Main } from "@1hive/1hive-ui"
-import React from 'react';
-import ReactDOM from 'react-dom';
-import App from './App';
+import { Main } from "@1hive/1hive-ui";
+import React from "react";
+import ReactDOM from "react-dom";
+import { Wagmi } from "./providers/Wagmi";
+import App from "./App";
 
 ReactDOM.render(
   <React.StrictMode>
-     <Main
+    <Wagmi>
+      <Main
         assetsUrl="/aragon-ui/"
         layout={false}
         scrollView={true}
@@ -13,6 +15,7 @@ ReactDOM.render(
       >
         <App />
       </Main>
+    </Wagmi>
   </React.StrictMode>,
   document.getElementById("root")
 );
