@@ -32,6 +32,35 @@ const timeUnits: { [key: string]: number } = {
   y: 31536000,
 }
 
+const resolveParam = (param: string, type: string): any => {
+  if (/\[\d*\]$/g.test(type)) {
+    if (!param.startsWith("[")) {
+      throw new Error(`Parameter ${type} should be an array, ${param} given.`);
+    }
+    // Converts something like "[[0x00,0x01],[0x03]]" to [["0x00","0x01"],["0x03"]]
+    return JSON.parse(
+      param
+        .replace(/\[(?!\[)/g, '["')
+        .replace(/(?<!\]),/g, '",')
+        .replace(/,(?!\[)/g, ',"')
+        .replace(/(?<!\])\]/g, '"]')
+    ).map((param: string[]) => resolveParam(JSON.stringify(param), type.slice(0, type.lastIndexOf("["))));
+  }
+  if (type === "address") {
+    return address(param)
+  }
+  if (/^u?int(\d)*$/.test(type)) {
+    return uint(param);
+  }
+  if (type === "bool") {
+    return boolean(param)
+  }
+  if (type === "bytes") {
+    return bytes(param)
+  }
+  return param;
+}
+
 const entities = new Map<string, string>([
   ["token:DAIx", "0xdai"]
 ]);
@@ -41,29 +70,39 @@ const toDecimals = (amount: number | string, decimals = 18): BigNumber => {
   return BigNumber.from((integer !== "0" ? integer : "") + (decimal || "").padEnd(decimals, "0") || "0");
 };
 
-function address(address: string) {
+function address(address: string): string {
   if (utils.isAddress(address)) {
     return address
   } else if (entities.has(address)) {
-    return entities.get(address)
+    return entities.get(address)!
   }
   throw Error("Invalid address")
 }
 
-function uint(uint: string) {
-  const [, amount, decimals = "0", unit] = String(uint).match(/^(\d*(?:\.\d*)?)(?:e(\d+))?([s|m|h|d|w|y]?)$/)!
-  return toDecimals(amount, parseInt(decimals)).mul(timeUnits[unit] ?? 1).toString()
+function uint(uint: string): string {
+  const [, amount, decimals = "0", unit = "s", inverse = "s"] = String(uint).match(/^(\d*(?:\.\d*)?)(?:e(\d+))?([s|m|h|d|w|y])?(?:\/([s|m|h|d|w|y]))?$/)!
+  return toDecimals(amount, parseInt(decimals)).mul(timeUnits[unit]).div(timeUnits[inverse]).toString()
 }
 
-function bytes(bytes: string) {
+function bytes(bytes: string): string {
   if (bytes.startsWith("0x")) {
     return bytes
   }
   return utils.hexlify(utils.toUtf8Bytes(bytes))
 }
 
-function _args(args: string[], types: Function[]) {
-  return args.map((arg, i) => types[i] ? types[i](arg) : arg)
+function boolean(bool: string) {
+  if (bool === "true") {
+    return true
+  }
+  if (bool === "false") {
+    return false
+  }
+  throw new Error(`Malformed boolean, it should be "true" or "false"`)
+}
+
+function _args(args: string[], types: string[]) {
+  return args.map((arg, i) => types[i] ? resolveParam(arg, types[i]) : arg)
 }
 
 export default function vortex(
@@ -87,7 +126,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "approve": {
-            const [token, spender, amount] = _args(rest, [address, address, uint])
+            const [token, spender, amount] = _args(rest, ['address', 'address', 'uint'])
             return {
               type: CallCode.ERC20_APPROVE,
               data: {
@@ -99,7 +138,7 @@ export default function vortex(
             }
           }
           case "transfer-from": {
-            const [token, sender, recipient, amount] = _args(rest, [address, address, address, uint])
+            const [token, sender, recipient, amount] = _args(rest, ['address', 'address', 'address', 'uint'])
             return {
               type: CallCode.ERC20_TRANSFER_FROM,
               data: {
@@ -111,7 +150,7 @@ export default function vortex(
             }
           }
           case "upgrade": {
-            const [token, amount] = _args(rest, [address, uint])
+            const [token, amount] = _args(rest, ['address', 'uint'])
             return {
               type: CallCode.SUPERTOKEN_UPGRADE,
               data: {
@@ -121,7 +160,7 @@ export default function vortex(
             }
           }
           case "downgrade": {
-            const [token, amount] = _args(rest, [address, uint])
+            const [token, amount] = _args(rest, ['address', 'uint'])
             return {
               type: CallCode.SUPERTOKEN_DOWNGRADE,
               data: {
@@ -138,7 +177,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, receiver, flowRate, userData = "0x"] = _args(rest, [address, address, uint, bytes])
+            const [token, receiver, flowRate, userData = "0x"] = _args(rest, ['address', 'address', 'uint', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -155,7 +194,7 @@ export default function vortex(
             }
           }
           case "update": {
-            const [token, receiver, flowRate, userData = "0x"] = _args(rest, [address, address, uint, bytes])
+            const [token, receiver, flowRate, userData = "0x"] = _args(rest, ['address', 'address', 'uint', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -172,7 +211,7 @@ export default function vortex(
             }
           }
           case "delete": {
-            const [token, receiver, sender, userData = "0x"] = _args(rest, [address, address, address, bytes])
+            const [token, receiver, sender, userData = "0x"] = _args(rest, ['address', 'address', 'address', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -196,7 +235,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, indexId, userData = "0x"] = _args(rest, [address, uint, bytes])
+            const [token, indexId, userData = "0x"] = _args(rest, ['address', 'uint', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -212,7 +251,7 @@ export default function vortex(
             }
           }
           case "update": {
-            const [token, indexId, indexValue, userData = "0x"] = _args(rest, [address, uint, uint, bytes])
+            const [token, indexId, indexValue, userData = "0x"] = _args(rest, ['address', 'uint', 'uint', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -233,7 +272,7 @@ export default function vortex(
         }
       }
       case "distribute": {
-        const [token, indexId, amount, userData = "0x"] = _args(args, [address, uint, uint, bytes])
+        const [token, indexId, amount, userData = "0x"] = _args(args, ['address', 'uint', 'uint', 'bytes'])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
           data: {
@@ -253,7 +292,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "approve": {
-            const [token, indexId, publisher, userData = "0x"] = _args(rest, [address, uint, address, bytes])
+            const [token, indexId, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -270,7 +309,7 @@ export default function vortex(
             }
           }
           case "revoke": {
-            const [token, indexId, publisher, userData = "0x"] = _args(rest, [address, uint, address, bytes])
+            const [token, indexId, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -287,7 +326,7 @@ export default function vortex(
             }
           }
           case "update": {
-            const [token, indexId, subscriber, units, userData = "0x"] = _args(rest, [address, uint, address, uint, bytes])
+            const [token, indexId, subscriber, units, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'uint', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -305,7 +344,7 @@ export default function vortex(
             }
           }
           case "delete": {
-            const [token, indexId, subscriber, publisher, userData = "0x"] = _args(rest, [address, uint, address, address, bytes])
+            const [token, indexId, subscriber, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'address', 'bytes'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -327,7 +366,7 @@ export default function vortex(
         }
       }
       case "claim": {
-        const [token, indexId, subscriber, publisher, userData = "0x"] = _args(args, [address, uint, address, address, bytes])
+        const [token, indexId, subscriber, publisher, userData = "0x"] = _args(args, ['address', 'uint', 'address', 'address', 'bytes'])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
           data: {
@@ -345,8 +384,9 @@ export default function vortex(
         }
       }
       case "call": {
-        const [superApp, action, ...params] = _args(args, [address])
-        const calldata = (new utils.Interface([`function ${action} external`])).encodeFunctionData(action.split("(")[0], params)
+        const [superApp, action, ...params] = _args(args, ['address'])
+        const paramTypes = action.split("(")[1].split(")")[0].split(",").map(resolveParam)
+        const calldata = (new utils.Interface([`function ${action} external`])).encodeFunctionData(action.split("(")[0], _args(params, paramTypes))
         return {
           type: CallCode.CALL_APP_ACTION,
           superApp,
