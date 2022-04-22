@@ -1,26 +1,26 @@
 import { utils, BigNumber } from "ethers"
 
 export enum CallCode {
-	ERC20_APPROVE = 1,
-	ERC20_TRANSFER_FROM = 2,
-	SUPERTOKEN_UPGRADE = 101,
-	SUPERTOKEN_DOWNGRADE = 102,
-	SUPERFLUID_CALL_AGREEMENT = 201,
-	CALL_APP_ACTION = 202
+  ERC20_APPROVE = 1,
+  ERC20_TRANSFER_FROM = 2,
+  SUPERTOKEN_UPGRADE = 101,
+  SUPERTOKEN_DOWNGRADE = 102,
+  SUPERFLUID_CALL_AGREEMENT = 201,
+  CALL_APP_ACTION = 202
 }
 
 export enum Method {
-	CREATE_FLOW = 'createFlow',
-	UPDATE_FLOW = 'updateFlow',
-	DELETE_FLOW = 'deleteFlow',
-	CREATE_INDEX = 'createIndex',
-	UPDATE_INDEX = 'updateIndex',
-	DISTRIBUTE = 'distribute',
-	UPDATE_SUBSCRIPTION = 'updateSubscription',
-	APPROVE_SUBSCRIPTION = 'approveSubscription',
-	REVOKE_SUBSCRIPTION = 'revokeSubscription',
-	DELETE_SUBSCRIPTION = 'deleteSubscription',
-	CLAIM = 'claim'
+  CREATE_FLOW = 'createFlow',
+  UPDATE_FLOW = 'updateFlow',
+  DELETE_FLOW = 'deleteFlow',
+  CREATE_INDEX = 'createIndex',
+  UPDATE_INDEX = 'updateIndex',
+  DISTRIBUTE = 'distribute',
+  UPDATE_SUBSCRIPTION = 'updateSubscription',
+  APPROVE_SUBSCRIPTION = 'approveSubscription',
+  REVOKE_SUBSCRIPTION = 'revokeSubscription',
+  DELETE_SUBSCRIPTION = 'deleteSubscription',
+  CLAIM = 'claim'
 }
 
 const timeUnits: { [key: string]: number } = {
@@ -42,9 +42,9 @@ const toDecimals = (amount: number | string, decimals = 18): BigNumber => {
 };
 
 function address(address: string) {
-  if (utils.isAddress(address)){
+  if (utils.isAddress(address)) {
     return address
-  } else if(entities.has(address)) {
+  } else if (entities.has(address)) {
     return entities.get(address)
   }
   throw Error("Invalid address")
@@ -81,6 +81,7 @@ export default function vortex(
       .replace(/"([^"]*)"/g, (_, s) => s.replace(/ /g, '"'))
       .split(" ")
       .map((s) => s.replace(/"/g, " "));
+    const ctx = "0x"
     switch (commandName) {
       case "token": {
         const [subCommand, ...rest] = args
@@ -94,7 +95,7 @@ export default function vortex(
                 amount,
                 spender
               }
-              
+
             }
           }
           case "transfer-from": {
@@ -137,24 +138,24 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, receiver, flowRate, ctx = "0x", userData = "0x"] = _args(rest, [address, address, uint, bytes, bytes])
+            const [token, receiver, flowRate, userData = "0x"] = _args(rest, [address, address, uint, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
                 agreementType: "CFA",
                 method: Method.CREATE_FLOW,
                 arguments: [
-                    token,
-                    receiver,
-                    flowRate,
-                    ctx,
+                  token,
+                  receiver,
+                  flowRate,
+                  ctx
                 ],
                 userData
               },
             }
           }
           case "update": {
-            const [token, receiver, flowRate, ctx = "0x", userData = "0x"] = _args(rest, [address, address, uint, bytes, bytes])
+            const [token, receiver, flowRate, userData = "0x"] = _args(rest, [address, address, uint, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -171,7 +172,7 @@ export default function vortex(
             }
           }
           case "delete": {
-            const [token, receiver, sender, ctx = "0x", userData = "0x"] = _args(rest, [address, address, address, bytes, bytes])
+            const [token, receiver, sender, userData = "0x"] = _args(rest, [address, address, address, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -195,7 +196,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, indexId, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, bytes, bytes])
+            const [token, indexId, userData = "0x"] = _args(rest, [address, uint, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -211,7 +212,7 @@ export default function vortex(
             }
           }
           case "update": {
-            const [token, indexId, indexValue, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, uint, bytes, bytes])
+            const [token, indexId, indexValue, userData = "0x"] = _args(rest, [address, uint, uint, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -232,7 +233,7 @@ export default function vortex(
         }
       }
       case "distribute": {
-        const [token, indexId, amount, ctx = "0x", userData = "0x"] = _args(args, [address, uint, uint, bytes, bytes])
+        const [token, indexId, amount, userData = "0x"] = _args(args, [address, uint, uint, bytes])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
           data: {
@@ -252,7 +253,7 @@ export default function vortex(
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "approve": {
-            const [token, indexId, publisher, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, address, bytes, bytes])
+            const [token, indexId, publisher, userData = "0x"] = _args(rest, [address, uint, address, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -269,7 +270,7 @@ export default function vortex(
             }
           }
           case "revoke": {
-            const [token, indexId, publisher, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, address, bytes, bytes])
+            const [token, indexId, publisher, userData = "0x"] = _args(rest, [address, uint, address, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -286,7 +287,7 @@ export default function vortex(
             }
           }
           case "update": {
-            const [token, indexId, subscriber, units, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, address, uint, bytes, bytes])
+            const [token, indexId, subscriber, units, userData = "0x"] = _args(rest, [address, uint, address, uint, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -304,7 +305,7 @@ export default function vortex(
             }
           }
           case "delete": {
-            const [token, indexId, subscriber, publisher, ctx = "0x", userData = "0x"] = _args(rest, [address, uint, address, address, bytes, bytes])
+            const [token, indexId, subscriber, publisher, userData = "0x"] = _args(rest, [address, uint, address, address, bytes])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
               data: {
@@ -326,7 +327,7 @@ export default function vortex(
         }
       }
       case "claim": {
-        const [token, indexId, subscriber, publisher, ctx = "0x", userData = "0x"] = _args(args, [address, uint, address, address, bytes, bytes])
+        const [token, indexId, subscriber, publisher, userData = "0x"] = _args(args, [address, uint, address, address, bytes])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
           data: {
