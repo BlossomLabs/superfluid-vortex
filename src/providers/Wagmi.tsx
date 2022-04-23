@@ -5,10 +5,10 @@ import { allChains, WagmiProvider } from "wagmi";
 import type { Connector } from "wagmi";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
-import { InfuraProvider, JsonRpcProvider } from "@ethersproject/providers";
+import { InfuraProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 
-const CHAIN_WHITELIST = [1, 3, 4, 5, 10, 42, 137, 42161, 421611, 80001];
+const CHAIN_WHITELIST = [1, 3, 4, 5, 10, 42, 69, 137, 42161, 421611, 80001];
 const INFURA_ID = process.env.REACT_APP_INFURA_ID;
 
 // polyfill Buffer for client for walletconnect

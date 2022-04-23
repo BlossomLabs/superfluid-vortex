@@ -3,18 +3,21 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Wagmi } from "./providers/Wagmi";
 import App from "./App";
+import { SuperfluidProvider } from "./providers/Superfluid";
 
 ReactDOM.render(
   <React.StrictMode>
     <Wagmi>
-      <Main
-        assetsUrl="/aragon-ui/"
-        layout={false}
-        scrollView={true}
-        theme="dark"
-      >
-        <App />
-      </Main>
+      <SuperfluidProvider>
+        <Main
+          assetsUrl="/aragon-ui/"
+          layout={false}
+          scrollView={true}
+          theme="dark"
+        >
+          <App />
+        </Main>
+      </SuperfluidProvider>
     </Wagmi>
   </React.StrictMode>,
   document.getElementById("root")

@@ -5,11 +5,12 @@ import { conf, contribution, language } from "../editor/vortex";
 import { Loading } from "../components/Loading";
 
 type VortexEditorProps = {
+  code: string,
+  onChange(value: string): void,
   onEditorMounting(mounting: boolean): void;
-};
+}
 
-export const VortexEditor = ({ onEditorMounting }: VortexEditorProps) => {
-  const [code, setCode] = useState("");
+export const VortexEditor = ({ code, onChange, onEditorMounting }: VortexEditorProps) => {
 
   return (
     <MonacoEditor
@@ -18,7 +19,7 @@ export const VortexEditor = ({ onEditorMounting }: VortexEditorProps) => {
       language="vortex"
       loading={<Loading />}
       value={code}
-      onChange={(str) => setCode(str || "")}
+      onChange={(str) => onChange(str || "")}
       beforeMount={(monaco) => {
         monaco.editor.defineTheme("theme", theme);
         monaco.languages.register(contribution);
