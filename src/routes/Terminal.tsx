@@ -19,11 +19,16 @@ export const Terminal = () => {
 
 
   const handleExecute = async () => {
-    if (sf) {
+    if (sf && signer) {
       setInProgress(true)
-      await vortex(sf)`
-        ${code}
-      `.exec(signer)
+      try {
+        const receipt = await vortex(sf)`
+          ${code}
+        `.exec(signer)
+        alert("Transaction success: " + receipt.transactionHash)
+      } catch (e: any) {
+        alert(e.message)
+      }
       setInProgress(false)
     }
   }
@@ -32,8 +37,8 @@ export const Terminal = () => {
     <Container>
       <EditorWrapper>
         <VortexEditor onEditorMounting={setEditorMounting} code={code} onChange={setCode} />
+        {!editorMounting && <Button wide mode="positive" label={inProgress ? "Signing transactions…" : "Execute"} onClick={handleExecute} disabled={!sf || inProgress} />}
       </EditorWrapper>
-      {!editorMounting && <Button label={inProgress ? "Signing transactions…" : "Execute"} onClick={handleExecute} disabled={!sf || inProgress} />}
     </Container>
   );
 };
@@ -48,5 +53,11 @@ const Container = styled.div`
 `;
 
 const EditorWrapper = styled.div`
-  width: 60%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${2 * GU}px;
+  width: 100%
 `;

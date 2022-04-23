@@ -1,4 +1,4 @@
-import { utils, BigNumber, Signer, Contract } from "ethers"
+import { utils, BigNumber, Signer, Contract, ContractReceipt } from "ethers"
 import { Framework } from "@superfluid-finance/sdk-core"
 import Operation from "@superfluid-finance/sdk-core/dist/module/Operation"
 
@@ -397,7 +397,7 @@ export default function vortex(sf: Framework) {
   return (
     strings: TemplateStringsArray,
     ...keys: string[]
-  ): { exec: any } => {
+  ): { exec: (signer: Signer) => Promise<ContractReceipt> } => {
     return {
       exec: async (signer: Signer) => {
         const config = {
