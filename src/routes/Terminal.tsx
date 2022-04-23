@@ -6,11 +6,9 @@ import { VortexEditor } from "../components/VortexEditor";
 import { useSuperfluid } from "../providers/Superfluid";
 import vortex from "../vortex";
 
-const defaultVortexScript = `
-  token pre-approve token:fDAI token:fDAIx 100e18
-  token upgrade token:fDAIx 100e18 // upgrade 100 daix to play the game
-  flow create token:fDAIx 0x40aD5B5b40066432c7A9c876e2C78B4a7564f0dB 1e18/m
-`
+const defaultVortexScript = `token pre-approve token:fDAI token:fDAIx 100e18
+token upgrade token:fDAIx 100e18 // upgrade 100 daix to play the game
+flow create token:fDAIx 0x40aD5B5b40066432c7A9c876e2C78B4a7564f0dB 1e18/mo`
 
 export const Terminal = () => {
   const [editorMounting, setEditorMounting] = useState(true);

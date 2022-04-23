@@ -37,6 +37,7 @@ const timeUnits: { [key: string]: number } = {
   h: 3600,
   d: 86400,
   w: 604800,
+  mo: 2592000, // 30d
   y: 31536000,
 }
 
@@ -96,7 +97,7 @@ function address(address: string, { entities }: Config): string {
 }
 
 function uint(uint: string): string {
-  const [, amount, decimals = "0", unit = "s", inverse = "s"] = String(uint).match(/^(\d*(?:\.\d*)?)(?:e(\d+))?([s|m|h|d|w|y])?(?:\/([s|m|h|d|w|y]))?$/)!
+  const [, amount, decimals = "0", unit = "s", inverse = "s"] = String(uint).match(/^(\d*(?:\.\d*)?)(?:e(\d+))?([s|m|h|d|w|mo|y]|mo)?(?:\/([s|m|h|d|w|mo|y]|mo))?$/)!
   return toDecimals(amount, parseInt(decimals)).mul(timeUnits[unit]).div(timeUnits[inverse]).toString()
 }
 
