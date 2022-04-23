@@ -31,8 +31,6 @@ export const VortexEditor = ({ onEditorMounting }: VortexEditorProps) => {
         editor.setPosition({ lineNumber: 10000, column: 0 });
         editor.focus();
 
-        console.log("aaaa");
-
         onEditorMounting(false);
       }}
       options={{

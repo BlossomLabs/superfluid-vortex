@@ -1,17 +1,19 @@
 import { utils, BigNumber } from "ethers"
 import { Framework } from "@superfluid-finance/sdk-core"
+import Operation from "@superfluid-finance/sdk-core/dist/module/Operation"
 
 type Config = {
   entities: { [key: string]: string }
+  agreements: { [key: string]: string }
 }
 
 export enum CallCode {
-  ERC20_APPROVE = 1,
-  ERC20_TRANSFER_FROM = 2,
-  SUPERTOKEN_UPGRADE = 101,
-  SUPERTOKEN_DOWNGRADE = 102,
-  SUPERFLUID_CALL_AGREEMENT = 201,
-  CALL_APP_ACTION = 202
+  ERC20_APPROVE = "ERC20_APPROVE",
+  ERC20_TRANSFER_FROM = "ERC20_TRANSFER_FROM",
+  SUPERTOKEN_UPGRADE = "SUPERTOKEN_UPGRADE",
+  SUPERTOKEN_DOWNGRADE = "SUPERTOKEN_DOWNGRADE",
+  SUPERFLUID_CALL_AGREEMENT = "SUPERFLUID_CALL_AGREEMENT",
+  CALL_APP_ACTION = "CALL_APP_ACTION"
 }
 
 export enum Method {
@@ -66,6 +68,10 @@ const resolveParam = (param: string, type: string, config: Config): any => {
   return param;
 }
 
+const calldata = (signature: string, params: string[]) => {
+  return (new utils.Interface([`function ${signature} external`])).encodeFunctionData(signature.split("(")[0], params)
+}
+
 const toDecimals = (amount: number | string, decimals = 18): BigNumber => {
   const [integer, decimal] = String(amount).split(".");
   return BigNumber.from((integer !== "0" ? integer : "") + (decimal || "").padEnd(decimals, "0") || "0");
@@ -104,7 +110,7 @@ function boolean(bool: string) {
 
 
 
-function _vortex(input: string, config: Config) {
+function _vortex(input: string, config: Config): Operation[] {
   const _args = (args: string[], types: string[]) => {
     return args.map((arg, i) => types[i] ? resolveParam(arg, types[i], config) : arg)
   }
@@ -114,7 +120,8 @@ function _vortex(input: string, config: Config) {
     .map((command) => command.split("#")[0].split("//")[0])
     .map((command) => command.trim())
     .filter((command) => !!command);
-  return commands.map((command) => {
+
+  const actions = commands.map((command) => {
     const [commandName, ...args] = command
       .replace(/"([^"]*)"/g, (_, s) => s.replace(/ /g, '"'))
       .split(" ")
@@ -125,47 +132,35 @@ function _vortex(input: string, config: Config) {
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "approve": {
-            const [token, spender, amount] = _args(rest, ['address', 'address', 'uint'])
+            const [token, spender, amount] = _args(rest, ['address', 'address', 'uint256'])
             return {
               type: CallCode.ERC20_APPROVE,
-              data: {
-                token,
-                amount,
-                spender
-              }
-
+              to: token,
+              data: calldata("approve(address,uint256)", [spender, amount])
             }
           }
           case "transfer-from": {
-            const [token, sender, recipient, amount] = _args(rest, ['address', 'address', 'address', 'uint'])
+            const [token, sender, recipient, amount] = _args(rest, ['address', 'address', 'address', 'uint256'])
             return {
               type: CallCode.ERC20_TRANSFER_FROM,
-              data: {
-                token,
-                sender,
-                recipient,
-                amount
-              }
+              to: token,
+              data: calldata('transferFrom(address,address,uint256)', [sender, recipient, amount])
             }
           }
           case "upgrade": {
-            const [token, amount] = _args(rest, ['address', 'uint'])
+            const [token, amount] = _args(rest, ['address', 'uint256'])
             return {
               type: CallCode.SUPERTOKEN_UPGRADE,
-              data: {
-                token,
-                amount
-              }
+              to: token,
+              data: calldata("upgrade(uint256)", [amount])
             }
           }
           case "downgrade": {
-            const [token, amount] = _args(rest, ['address', 'uint'])
+            const [token, amount] = _args(rest, ['address', 'uint256'])
             return {
               type: CallCode.SUPERTOKEN_DOWNGRADE,
-              data: {
-                token,
-                amount
-              }
+              to: token,
+              data: calldata("downgrade(uint256)", [amount])
             }
           }
           default:
@@ -176,54 +171,42 @@ function _vortex(input: string, config: Config) {
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, receiver, flowRate, userData = "0x"] = _args(rest, ['address', 'address', 'uint', 'bytes'])
+            const [token, receiver, flowRate] = _args(rest, ['address', 'address', 'int96'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "CFA",
-                method: Method.CREATE_FLOW,
-                arguments: [
-                  token,
-                  receiver,
-                  flowRate,
-                  ctx
-                ],
-                userData
-              },
+              to: config.agreements.CFA,
+              data: calldata("createFlow(address,address,int96,bytes)", [
+                token,
+                receiver,
+                flowRate,
+                ctx
+              ])
             }
           }
           case "update": {
-            const [token, receiver, flowRate, userData = "0x"] = _args(rest, ['address', 'address', 'uint', 'bytes'])
+            const [token, receiver, flowRate] = _args(rest, ['address', 'address', 'int96'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "CFA",
-                method: Method.UPDATE_FLOW,
-                arguments: [
-                  token,
-                  receiver,
-                  flowRate,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.CFA,
+              data: calldata("updateFlow(address,address,int96,bytes)", [
+                token,
+                receiver,
+                flowRate,
+                ctx
+              ])
             }
           }
           case "delete": {
-            const [token, receiver, sender, userData = "0x"] = _args(rest, ['address', 'address', 'address', 'bytes'])
+            const [token, receiver, sender] = _args(rest, ['address', 'address', 'address'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "CFA",
-                method: Method.DELETE_FLOW,
-                arguments: [
-                  token,
-                  sender,
-                  receiver,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.CFA,
+              data: calldata("deleteFlow(address,address,address,bytes)", [
+                token,
+                sender,
+                receiver,
+                ctx
+              ])
             }
           }
           default:
@@ -234,36 +217,28 @@ function _vortex(input: string, config: Config) {
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "create": {
-            const [token, indexId, userData = "0x"] = _args(rest, ['address', 'uint', 'bytes'])
+            const [token, indexId] = _args(rest, ['address', 'uint32'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.CREATE_INDEX,
-                arguments: [
-                  token,
-                  indexId,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("createIndex(address,uint32,bytes)", [
+                token,
+                indexId,
+                ctx
+              ])
             }
           }
           case "update": {
-            const [token, indexId, indexValue, userData = "0x"] = _args(rest, ['address', 'uint', 'uint', 'bytes'])
+            const [token, indexId, indexValue] = _args(rest, ['address', 'uint32', 'uint128'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.UPDATE_INDEX,
-                arguments: [
-                  token,
-                  indexId,
-                  indexValue,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("updateIndex(address,uint32,uint128,bytes)", [
+                token,
+                indexId,
+                indexValue,
+                ctx
+              ])
             }
           }
           default:
@@ -271,93 +246,73 @@ function _vortex(input: string, config: Config) {
         }
       }
       case "distribute": {
-        const [token, indexId, amount, userData = "0x"] = _args(args, ['address', 'uint', 'uint', 'bytes'])
+        const [token, indexId, amount] = _args(args, ['address', 'uint32', 'uint256'])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-          data: {
-            agreementType: "IDA",
-            method: Method.DISTRIBUTE,
-            arguments: [
-              token,
-              indexId,
-              amount,
-              ctx
-            ]
-          },
-          userData
+          to: config.agreements.IDA,
+          data: calldata("distribute(address,uint32,uint256,bytes)", [
+            token,
+            indexId,
+            amount,
+            ctx
+          ])
         }
       }
       case "subscription": {
         const [subCommand, ...rest] = args
         switch (subCommand) {
           case "approve": {
-            const [token, indexId, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'bytes'])
+            const [token, indexId, publisher] = _args(rest, ['address', 'uint32', 'address'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.APPROVE_SUBSCRIPTION,
-                arguments: [
-                  token,
-                  publisher,
-                  indexId,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("approveSubscription(address,address,uint32,bytes)", [
+                token,
+                publisher,
+                indexId,
+                ctx
+              ])
             }
           }
           case "revoke": {
-            const [token, indexId, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'bytes'])
+            const [token, indexId, publisher] = _args(rest, ['address', '32', 'address'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.REVOKE_SUBSCRIPTION,
-                arguments: [
-                  token,
-                  publisher,
-                  indexId,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("revokeSubscription(address,address,uint32,bytes)", [
+                token,
+                publisher,
+                indexId,
+                ctx
+              ])
             }
           }
           case "update": {
-            const [token, indexId, subscriber, units, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'uint', 'bytes'])
+            const [token, indexId, subscriber, units] = _args(rest, ['address', 'uint32', 'address', 'uint128'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.UPDATE_SUBSCRIPTION,
-                arguments: [
-                  token,
-                  indexId,
-                  subscriber,
-                  units,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("updateSubscription(address,uint32,address,uint128,bytes)", [
+                token,
+                indexId,
+                subscriber,
+                units,
+                ctx
+              ])
             }
           }
           case "delete": {
-            const [token, indexId, subscriber, publisher, userData = "0x"] = _args(rest, ['address', 'uint', 'address', 'address', 'bytes'])
+            const [token, indexId, subscriber, publisher] = _args(rest, ['address', 'uint', 'address', 'address'])
             return {
               type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-              data: {
-                agreementType: "IDA",
-                method: Method.DELETE_SUBSCRIPTION,
-                arguments: [
-                  token,
-                  publisher,
-                  indexId,
-                  subscriber,
-                  ctx
-                ]
-              },
-              userData
+              to: config.agreements.IDA,
+              data: calldata("deleteSubscription(address,address,uint32,address,bytes)", [
+                token,
+                publisher,
+                indexId,
+                subscriber,
+                ctx
+              ])
             }
           }
           default:
@@ -365,37 +320,33 @@ function _vortex(input: string, config: Config) {
         }
       }
       case "claim": {
-        const [token, indexId, subscriber, publisher, userData = "0x"] = _args(args, ['address', 'uint', 'address', 'address', 'bytes'])
+        const [token, indexId, subscriber, publisher] = _args(args, ['address', 'uint32', 'address', 'address'])
         return {
           type: CallCode.SUPERFLUID_CALL_AGREEMENT,
-          data: {
-            agreementType: "IDA",
-            method: Method.CLAIM,
-            arguments: [
-              token,
-              indexId,
-              subscriber,
-              publisher,
-              ctx
-            ]
-          },
-          userData
+          to: config.agreements.IDA,
+          data: calldata("claim(address,address,uint32,address,bytes)", [
+            token,
+            publisher,
+            indexId,
+            subscriber,
+            ctx
+          ])
         }
       }
       case "call": {
         const [superApp, action, ...params] = _args(args, ['address'])
         const paramTypes = action.split("(")[1].split(")")[0].split(",").map(resolveParam)
-        const calldata = (new utils.Interface([`function ${action} external`])).encodeFunctionData(action.split("(")[0], _args(params, paramTypes))
         return {
           type: CallCode.CALL_APP_ACTION,
-          superApp,
-          calldata
+          to: superApp,
+          data: calldata(action, _args(params, paramTypes))
         }
       }
       default:
         throw new Error("Unrecognized command: " + commandName);
     }
   })
+  return actions.map(({ to, data, type }) => new Operation(Promise.resolve({ to, data }), type))
 }
 
 export default function vortex(sf: Framework) {
@@ -404,9 +355,13 @@ export default function vortex(sf: Framework) {
     ...keys: string[]
   ): Promise<any> => {
     const config = {
-      entities: await sf.query.listAllSuperTokens({}).then(res => res.data.reduce((acc, obj) => ({ ...acc, [`token:${obj.symbol}`]: obj.id }), {}))
+      entities: await sf.query.listAllSuperTokens({}).then(res => res.data.reduce((acc, obj) => ({ ...acc, [`token:${obj.symbol}`]: obj.id }), {})),
+      agreements: {
+        CFA: sf.settings.config.cfaV1Address,
+        IDA: sf.settings.config.idaV1Address,
+      }
     }
     const input = strings[0] + keys.map((key, i) => key + strings[i + 1]).join("");
-    return _vortex(input, config)
+    return sf.batchCall(_vortex(input, config))
   }
 }
