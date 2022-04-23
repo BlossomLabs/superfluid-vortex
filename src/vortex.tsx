@@ -1,4 +1,9 @@
 import { utils, BigNumber } from "ethers"
+import { Framework } from "@superfluid-finance/sdk-core"
+
+type Config = {
+  entities: { [key: string]: string }
+}
 
 export enum CallCode {
   ERC20_APPROVE = 1,
@@ -32,7 +37,7 @@ const timeUnits: { [key: string]: number } = {
   y: 31536000,
 }
 
-const resolveParam = (param: string, type: string): any => {
+const resolveParam = (param: string, type: string, config: Config): any => {
   if (/\[\d*\]$/g.test(type)) {
     if (!param.startsWith("[")) {
       throw new Error(`Parameter ${type} should be an array, ${param} given.`);
@@ -44,10 +49,10 @@ const resolveParam = (param: string, type: string): any => {
         .replace(/(?<!\]),/g, '",')
         .replace(/,(?!\[)/g, ',"')
         .replace(/(?<!\])\]/g, '"]')
-    ).map((param: string[]) => resolveParam(JSON.stringify(param), type.slice(0, type.lastIndexOf("["))));
+    ).map((param: string[]) => resolveParam(JSON.stringify(param), type.slice(0, type.lastIndexOf("[")), config));
   }
   if (type === "address") {
-    return address(param)
+    return address(param, config)
   }
   if (/^u?int(\d)*$/.test(type)) {
     return uint(param);
@@ -61,22 +66,18 @@ const resolveParam = (param: string, type: string): any => {
   return param;
 }
 
-const entities = new Map<string, string>([
-  ["token:DAIx", "0xdai"]
-]);
-
 const toDecimals = (amount: number | string, decimals = 18): BigNumber => {
   const [integer, decimal] = String(amount).split(".");
   return BigNumber.from((integer !== "0" ? integer : "") + (decimal || "").padEnd(decimals, "0") || "0");
 };
 
-function address(address: string): string {
+function address(address: string, { entities }: Config): string {
   if (utils.isAddress(address)) {
     return address
-  } else if (entities.has(address)) {
-    return entities.get(address)!
+  } else if (address in entities) {
+    return entities[address]
   }
-  throw Error("Invalid address")
+  throw Error("Unrecognized address " + address)
 }
 
 function uint(uint: string): string {
@@ -101,15 +102,13 @@ function boolean(bool: string) {
   throw new Error(`Malformed boolean, it should be "true" or "false"`)
 }
 
-function _args(args: string[], types: string[]) {
-  return args.map((arg, i) => types[i] ? resolveParam(arg, types[i]) : arg)
-}
 
-export default function vortex(
-  strings: TemplateStringsArray,
-  ...keys: string[]
-): any {
-  const input = strings[0] + keys.map((key, i) => key + strings[i + 1]).join("");
+
+function _vortex(input: string, config: Config) {
+  const _args = (args: string[], types: string[]) => {
+    return args.map((arg, i) => types[i] ? resolveParam(arg, types[i], config) : arg)
+  }
+
   const commands = input
     .split("\n")
     .map((command) => command.split("#")[0].split("//")[0])
@@ -397,4 +396,17 @@ export default function vortex(
         throw new Error("Unrecognized command: " + commandName);
     }
   })
+}
+
+export default function vortex(sf: Framework) {
+  return async (
+    strings: TemplateStringsArray,
+    ...keys: string[]
+  ): Promise<any> => {
+    const config = {
+      entities: await sf.query.listAllSuperTokens({}).then(res => res.data.reduce((acc, obj) => ({ ...acc, [`token:${obj.symbol}`]: obj.id }), {}))
+    }
+    const input = strings[0] + keys.map((key, i) => key + strings[i + 1]).join("");
+    return _vortex(input, config)
+  }
 }
