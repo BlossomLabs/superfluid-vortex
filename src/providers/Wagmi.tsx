@@ -52,8 +52,6 @@ const getProvider = ({
 export const Wagmi = ({ children }: { children: ReactNode }) => {
   const connectors = useMemo(() => getConnectors(), []);
 
-  console.log("here");
-
   return (
     <WagmiProvider connectors={connectors} provider={getProvider}>
       {children}
