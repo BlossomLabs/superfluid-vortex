@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.js": "/superfluid-vortex/static/js/main.af79d9e5.chunk.js",
+    "main.js.map": "/superfluid-vortex/static/js/main.af79d9e5.chunk.js.map",
+    "runtime-main.js": "/superfluid-vortex/static/js/runtime-main.65547508.js",
+    "runtime-main.js.map": "/superfluid-vortex/static/js/runtime-main.65547508.js.map",
+    "static/js/2.9f4bafeb.chunk.js": "/superfluid-vortex/static/js/2.9f4bafeb.chunk.js",
+    "static/js/2.9f4bafeb.chunk.js.map": "/superfluid-vortex/static/js/2.9f4bafeb.chunk.js.map",
+    "index.html": "/superfluid-vortex/index.html",
+    "static/js/2.9f4bafeb.chunk.js.LICENSE.txt": "/superfluid-vortex/static/js/2.9f4bafeb.chunk.js.LICENSE.txt",
+    "static/media/animated-logo.645dd8af.gif": "/superfluid-vortex/static/media/animated-logo.645dd8af.gif",
+    "static/media/ethereum.df265e36.svg": "/superfluid-vortex/static/media/ethereum.df265e36.svg",
+    "static/media/gnosis-chain.965f5bed.svg": "/superfluid-vortex/static/media/gnosis-chain.965f5bed.svg",
+    "static/media/loading-ring.ae5c4b38.svg": "/superfluid-vortex/static/media/loading-ring.ae5c4b38.svg",
+    "static/media/metamask.c5f1312c.svg": "/superfluid-vortex/static/media/metamask.c5f1312c.svg",
+    "static/media/walletconnect.82f35f42.svg": "/superfluid-vortex/static/media/walletconnect.82f35f42.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.65547508.js",
+    "static/js/2.9f4bafeb.chunk.js",
+    "static/js/main.af79d9e5.chunk.js"
+  ]
+}
