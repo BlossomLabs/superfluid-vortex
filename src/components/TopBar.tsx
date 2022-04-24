@@ -5,7 +5,7 @@ import logo from "../assets/animated-logo.gif"
 
 export const TopBar = () => (
   <Container>
-    <Title><img src={logo} alt="logo" width="120" />Superfluid Vortex</Title>
+    <Title><img src={logo} alt="logo" width="100" />Superfluid Vortex</Title>
     <AccountModule compact={false} />
   </Container>
 );
