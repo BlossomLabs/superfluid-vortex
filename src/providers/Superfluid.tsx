@@ -58,7 +58,6 @@ export const SuperfluidProvider = ({ children }: { children: ReactNode }) => {
         superTokens = [];
       }
       setAllSuperTokens(superTokens);
-      console.log(superTokens);
       setSf(SUPERFLUID_CACHE.get(chainId)!);
     })();
 
