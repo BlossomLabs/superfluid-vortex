@@ -2,8 +2,8 @@ import { CommandName } from "./types";
 
 const bounded = (text: string) => `\\b${text}\\b`;
 
-const identifierStart = "[_a-zA-Z]";
-const identifierContinue = "[_a-zA-Z0-9]";
+const identifierStart = "[\\-a-zA-Z]";
+const identifierContinue = "[\\-a-zA-Z0-9]";
 const identifier = bounded(`${identifierStart}${identifierContinue}*`);
 
 const keywords = Object.values(CommandName);

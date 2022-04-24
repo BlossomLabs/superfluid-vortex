@@ -2,8 +2,8 @@ import { CommandName } from "./types";
 
 const bounded = (text: string) => `\\b${text}\\b`;
 
-const identifierStart = "[_a-zA-Z]";
-const identifierContinue = "[_a-zA-Z0-9]";
+const identifierStart = "[a-zA-Z]";
+const identifierContinue = "[\\-:a-zA-Z0-9]";
 const identifier = bounded(`${identifierStart}${identifierContinue}*`);
 
 const keywords = Object.values(CommandName);
@@ -12,11 +12,11 @@ const namedLiterals = ["true", "false"];
 
 const nonCommentWs = `[ \\t\\r\\n]`;
 
-const numericLiteral = `[0-9]+`;
+const numericLiteral = `0x([0-9a-fA-F]+)|([0-9]+(e[0-9]+)?(mo|[s|m|h|d|w|mo|y])?(/mo|[s|m|h|d|w|mo|y])?)`;
 
 export const conf = {
   comments: {
-    lineComment: "//",
+    lineComment: ["//", "#"],
   },
   brackets: [
     ["{", "}"],

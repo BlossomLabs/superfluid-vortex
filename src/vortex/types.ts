@@ -15,6 +15,7 @@ export enum CommandName {
   Subscription = "subscription",
   Claim = "claim",
   // Sub-commands
+  PreApprove = "pre-approve",
   Approve = "approve",
   TransferFrom = "transfer-from",
   Upgrade = "upgrade",
